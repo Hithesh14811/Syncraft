@@ -1,0 +1,443 @@
+/* CollabIDE global styles — VS Code dark theme */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-header: #333333;
+  --bg-terminal: #1e1e1e;
+  --border: #3c3c3c;
+  --text-primary: #d4d4d4;
+  --text-secondary: #9d9d9d;
+  --text-error: #f44747;
+  --text-stdout: #d4d4d4;
+  --accent: #007acc;
+  --accent-hover: #1a8ad4;
+  --tab-active: #1e1e1e;
+  --tab-inactive: #2d2d2d;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+}
+
+/* ── Landing Page ─────────────────────────────────────────── */
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 2rem;
+  background: var(--bg-primary);
+}
+
+.landing__logo {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -1px;
+}
+
+.landing__subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.landing__card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.landing__label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+.landing__input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.landing__input:focus {
+  border-color: var(--accent);
+}
+
+.landing__input--error {
+  border-color: var(--text-error);
+}
+
+.landing__error {
+  color: var(--text-error);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.landing__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.landing__divider::before,
+.landing__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  font-weight: 500;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: #fff;
+  width: 100%;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn--secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  width: 100%;
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: rgba(0, 122, 204, 0.1);
+}
+
+.btn--run {
+  background: #388e3c;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+}
+
+.btn--run:hover:not(:disabled) {
+  background: #43a047;
+}
+
+/* ── Editor Layout ────────────────────────────────────────── */
+.editor-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 42px;
+}
+
+.editor-header__title {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin-right: auto;
+}
+
+.editor-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+/* Split: editor 70%, output panel 30% */
+.editor-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 7;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.output-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 3;
+  overflow: hidden;
+  min-height: 0;
+  border-top: 2px solid var(--border);
+}
+
+/* ── Tab Bar ──────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  background: var(--tab-inactive);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tab-bar__tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border);
+  background: var(--tab-inactive);
+  cursor: default;
+}
+
+.tab-bar__icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.tab-bar__name {
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+.tab-bar__tab--active {
+  background: var(--tab-active);
+  color: var(--text-primary);
+  border-top: 1px solid var(--accent);
+}
+
+/* ── Presence Panel ───────────────────────────────────────── */
+.presence-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.presence-panel__user {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.presence-panel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Language Dropdown ────────────────────────────────────── */
+.language-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.language-dropdown__select {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  padding: 0.3rem 0.5rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.language-dropdown__select:focus {
+  border-color: var(--accent);
+}
+
+.language-dropdown__warning {
+  font-size: 0.75rem;
+  color: #f9a825;
+}
+
+/* ── Output Panel ─────────────────────────────────────────── */
+.output-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-terminal);
+  overflow: hidden;
+}
+
+.output-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.75rem;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.output-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.output-panel__placeholder {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.output-panel__section {
+  margin-bottom: 0.5rem;
+}
+
+.output-panel__label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.output-panel__stdout {
+  color: var(--text-stdout);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.output-panel__stderr {
+  color: var(--text-error);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.output-panel__exit {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.output-panel__exit--nonzero {
+  color: var(--text-error);
+}
+
+.output-panel__error {
+  color: var(--text-error);
+  white-space: pre-wrap;
+}
+
+.output-panel__no-output {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.output-panel__stats {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+/* ── Stdin Input ──────────────────────────────────────────── */
+.stdin-section {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.stdin-section__header {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.stdin-section__textarea {
+  background: var(--bg-terminal);
+  border: none;
+  color: var(--text-primary);
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  resize: none;
+  outline: none;
+  height: 60px;
+  width: 100%;
+}
+
+/* ── Spinner ──────────────────────────────────────────────── */
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
