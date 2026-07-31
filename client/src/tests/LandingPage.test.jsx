@@ -1,4 +1,4 @@
-// Feature: collab-ide, Property 2: Blank username is always rejected
+// Feature: syncraft, Property 2: Blank username is always rejected
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import * as fc from 'fast-check'

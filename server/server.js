@@ -1,5 +1,5 @@
 /**
- * server.js — CollabIDE backend entry point
+ * server.js — Syncraft backend entry point
  *
  * Architecture:
  *   - Express handles HTTP routes (health check, optional Piston proxy)
@@ -49,7 +49,7 @@ attachRelay(httpServer)
 
 const PORT = process.env.PORT ?? 1234
 httpServer.listen(PORT, () => {
-  console.log(`[server] CollabIDE server listening on port ${PORT}`)
+  console.log(`[server] Syncraft server listening on port ${PORT}`)
   console.log(`[server] Health check: http://localhost:${PORT}/health`)
   console.log(`[server] WebSocket relay: ws://localhost:${PORT}/<roomId>`)
 })

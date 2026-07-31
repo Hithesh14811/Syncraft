@@ -1,6 +1,6 @@
-// Feature: collab-ide, Property 6: Awareness user state round-trip
-// Feature: collab-ide, Property 8: Cursor awareness reflects any Monaco position
-// Feature: collab-ide, Property 9: PresencePanel renders all connected users
+// Feature: syncraft, Property 6: Awareness user state round-trip
+// Feature: syncraft, Property 8: Cursor awareness reflects any Monaco position
+// Feature: syncraft, Property 9: PresencePanel renders all connected users
 
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'

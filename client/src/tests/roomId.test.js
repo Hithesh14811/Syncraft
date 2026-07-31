@@ -1,4 +1,4 @@
-// Feature: collab-ide, Property 1: Room ID is always URL-safe and non-empty
+// Feature: syncraft, Property 1: Room ID is always URL-safe and non-empty
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import { generateRoomId } from '../utils/roomId.js'

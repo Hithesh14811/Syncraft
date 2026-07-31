@@ -1,7 +1,7 @@
 {
-  "name": "collab-ide-client",
+  "name": "syncraft-client",
   "version": "1.0.0",
-  "description": "CollabIDE React frontend",
+  "description": "Syncraft React frontend",
   "type": "module",
   "scripts": {
     "dev": "vite",

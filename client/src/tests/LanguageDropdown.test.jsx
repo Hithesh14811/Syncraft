@@ -1,6 +1,6 @@
-// Feature: collab-ide, Property 10: Language dropdown always contains minimum required runtimes
-// Feature: collab-ide, Property 11: Language dropdown renders name and version for every runtime
-// Feature: collab-ide, Property 12: Monaco language mode matches selected runtime
+// Feature: syncraft, Property 10: Language dropdown always contains minimum required runtimes
+// Feature: syncraft, Property 11: Language dropdown renders name and version for every runtime
+// Feature: syncraft, Property 12: Monaco language mode matches selected runtime
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'

@@ -1,6 +1,6 @@
-// Feature: collab-ide, Property 3: Y.Text update round-trip
-// Feature: collab-ide, Property 4: CRDT merge preserves concurrent edits
-// Feature: collab-ide, Property 5: New joiner receives complete document state
+// Feature: syncraft, Property 3: Y.Text update round-trip
+// Feature: syncraft, Property 4: CRDT merge preserves concurrent edits
+// Feature: syncraft, Property 5: New joiner receives complete document state
 
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'

@@ -1,4 +1,4 @@
-// Feature: collab-ide, Property 14: OutputPanel renders execution output for any response
+// Feature: syncraft, Property 14: OutputPanel renders execution output for any response
 //
 // JDoodle returns a single combined `output` string (no separate stderr). The
 // panel classifies it: normal output → stdout style, error-looking → red stderr

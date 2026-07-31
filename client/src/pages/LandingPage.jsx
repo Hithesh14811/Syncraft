@@ -63,7 +63,7 @@ export default function LandingPage() {
   return (
     <div className="landing">
       <div>
-        <h1 className="landing__logo">CollabIDE</h1>
+        <h1 className="landing__logo">Syncraft</h1>
         <p className="landing__subtitle">Real-time collaborative code editor</p>
       </div>
 

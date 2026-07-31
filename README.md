@@ -1,4 +1,4 @@
-# CollabIDE
+# Syncraft
 
 A real-time collaborative code editor with live execution. Multiple people edit
 the same file simultaneously — with live cursors and presence — then run the code
@@ -172,7 +172,7 @@ The client (static) and server (long-lived WebSocket + proxy) deploy separately.
 1. New **Web Service** from this repo, root directory `server`.
 2. Build command: `npm install` · Start command: `npm start`.
 3. Add env vars `JDOODLE_CLIENT_ID` and `JDOODLE_CLIENT_SECRET`. (`PORT` is provided by Render automatically.)
-4. Note the service URL, e.g. `https://collab-ide-server.onrender.com`.
+4. Note the service URL, e.g. `https://syncraft-fh20.onrender.com`.
 
 Render supports WebSockets on the same port, so the Yjs relay and `/api/execute`
 proxy are both served from this one service.
@@ -181,13 +181,13 @@ proxy are both served from this one service.
 
 1. New project from this repo, root directory `client`.
 2. Framework preset: **Vite** (build `npm run build`, output `dist`).
-3. Add env var `VITE_WS_URL = wss://collab-ide-server.onrender.com`.
+3. Add env var `VITE_WS_URL = wss://syncraft-fh20.onrender.com`.
 4. Route `/api/*` to the server by adding a `vercel.json` in `client/`:
 
    ```json
    {
      "rewrites": [
-       { "source": "/api/:path*", "destination": "https://collab-ide-server.onrender.com/api/:path*" }
+       { "source": "/api/:path*", "destination": "https://syncraft-fh20.onrender.com/api/:path*" }
      ]
    }
    ```

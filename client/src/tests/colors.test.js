@@ -1,4 +1,4 @@
-// Feature: collab-ide, Property 7: User color is always from the palette
+// Feature: syncraft, Property 7: User color is always from the palette
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import { pickUserColor, USER_COLOR_PALETTE } from '../utils/colors.js'

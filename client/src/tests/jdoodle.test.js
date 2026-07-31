@@ -1,4 +1,4 @@
-// Feature: collab-ide, Property 13: Execute request always conforms to the proxy schema
+// Feature: syncraft, Property 13: Execute request always conforms to the proxy schema
 //
 // Also covers the JDoodle execution flow (executeCode) against the three required
 // scenarios — stdin input, a syntax/compile error, and an infinite-loop timeout —

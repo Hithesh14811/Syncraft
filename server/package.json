@@ -1,7 +1,7 @@
 {
-  "name": "collab-ide-server",
+  "name": "syncraft-server",
   "version": "1.0.0",
-  "description": "CollabIDE WebSocket relay server",
+  "description": "Syncraft WebSocket relay server",
   "main": "server.js",
   "type": "module",
   "scripts": {

@@ -134,7 +134,7 @@ export default function EditorPage() {
     <div className="editor-page">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="editor-header">
-        <span className="editor-header__title">CollabIDE</span>
+        <span className="editor-header__title">Syncraft</span>
 
         <PresencePanel
           states={presenceStates}
