@@ -15,7 +15,9 @@
  * errors/timeouts heuristically via isErrorOutput() / isTimeoutOutput() below.
  */
 
-const EXECUTE_URL = '/api/execute'
+// Relative by default (Vite dev proxy / Vercel rewrite). Set VITE_API_URL when
+// the client is hosted somewhere that can't proxy /api, e.g. a Render static site.
+const EXECUTE_URL = `${import.meta.env.VITE_API_URL ?? ''}/api/execute`
 
 /**
  * Map our language key to Monaco editor language ID.
