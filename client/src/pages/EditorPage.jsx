@@ -8,6 +8,9 @@
  *   4. Binds Yjs to Monaco once the editor mounts (useMonacoBinding)
  *   5. Manages presence, runtime selection, and code execution
  *
+ * The selected language lives in a shared Y.Map ("meta") so everyone in the
+ * room switches language together.
+ *
  * Layout (CSS flexbox column):
  *   ┌─────────────────────────────────────┐
  *   │  Header (presence, lang, run btn)   │  flex-shrink: 0
@@ -32,6 +35,7 @@ import { useCodeExecution } from '../hooks/useCodeExecution.js'
 
 import MonacoEditor from '../components/MonacoEditor.jsx'
 import PresencePanel from '../components/PresencePanel.jsx'
+import RemoteCursorStyles from '../components/RemoteCursorStyles.jsx'
 import LanguageDropdown from '../components/LanguageDropdown.jsx'
 import RunButton from '../components/RunButton.jsx'
 import TabBar from '../components/TabBar.jsx'
@@ -51,9 +55,10 @@ export default function EditorPage() {
   // Redirect to landing if no username was set (direct URL navigation)
   useEffect(() => {
     if (!sessionStorage.getItem('username')) {
-      navigate('/', { replace: true })
+      // Keep the room ID so the landing page can pre-fill "Join room"
+      navigate('/', { replace: true, state: { roomId } })
     }
-  }, [navigate])
+  }, [navigate, roomId])
 
   // ── Collaboration ──────────────────────────────────────────────────────────
   const { ydoc, provider } = useCollabEditor(roomId, username, color)
@@ -73,16 +78,25 @@ export default function EditorPage() {
   // ── Runtimes & language selection ─────────────────────────────────────────
   const { runtimes, loading: runtimesLoading, error: runtimesError, selectedRuntime, setSelectedRuntime } = useRuntimes()
 
-  // Update Monaco language mode when the selected runtime changes
+  // Picking a language writes it to the shared doc; the observer below applies
+  // it locally, so the change reaches every client in the room the same way.
   const handleRuntimeChange = useCallback((runtime) => {
-    setSelectedRuntime(runtime)
-    if (monacoRef.current && editorRef.current) {
-      monacoRef.current.editor.setModelLanguage(
-        editorRef.current.getModel(),
-        runtime.monacoLang
-      )
+    if (ydoc) ydoc.getMap('meta').set('language', runtime.language)
+    else setSelectedRuntime(runtime)
+  }, [ydoc, setSelectedRuntime])
+
+  useEffect(() => {
+    if (!ydoc || runtimes.length === 0) return
+    const meta = ydoc.getMap('meta')
+    const applyShared = () => {
+      const language = meta.get('language')
+      const runtime = runtimes.find((r) => r.language === language)
+      if (runtime) setSelectedRuntime(runtime)
     }
-  }, [setSelectedRuntime])
+    applyShared()
+    meta.observe(applyShared)
+    return () => meta.unobserve(applyShared)
+  }, [ydoc, runtimes, setSelectedRuntime])
 
   // ── Code execution ─────────────────────────────────────────────────────────
   const { execute, isRunning, output, execError } = useCodeExecution(selectedRuntime)
@@ -94,6 +108,13 @@ export default function EditorPage() {
     execute(code, stdin)
   }, [execute, isRunning, stdin])
 
+  // Monaco registers the Ctrl+Enter command once, at mount. Route it through a
+  // ref so it always runs the latest handleRun (current stdin and language).
+  const handleRunRef = useRef(handleRun)
+  useEffect(() => {
+    handleRunRef.current = handleRun
+  }, [handleRun])
+
   // ── Monaco mount callback ──────────────────────────────────────────────────
   const handleEditorMount = useCallback((editor, monaco) => {
     editorRef.current = editor
@@ -101,22 +122,12 @@ export default function EditorPage() {
     setEditor(editor) // publish as state so useMonacoBinding re-runs and binds
 
     // Register Ctrl+Enter / Cmd+Enter keyboard shortcut for Run
+    // Remote cursors/selections are broadcast by the y-monaco binding itself.
     editor.addCommand(
       monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
-      () => handleRun()
+      () => handleRunRef.current()
     )
-
-    // Broadcast cursor/selection changes via Yjs awareness so remote users
-    // see this client's cursor position rendered in their editors (via y-monaco).
-    editor.onDidChangeCursorSelection((e) => {
-      if (!provider?.awareness) return
-      const sel = e.selection
-      provider.awareness.setLocalStateField('cursor', {
-        anchor: { line: sel.startLineNumber, character: sel.startColumn },
-        head:   { line: sel.endLineNumber,   character: sel.endColumn },
-      })
-    })
-  }, [handleRun, provider])
+  }, [])
 
   // Set Monaco language when the selected runtime changes after editor mounts
   useEffect(() => {
@@ -132,6 +143,11 @@ export default function EditorPage() {
 
   return (
     <div className="editor-page">
+      <RemoteCursorStyles
+        states={presenceStates}
+        localClientId={provider?.awareness?.clientID}
+      />
+
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <header className="editor-header">
         <span className="editor-header__title">Syncraft</span>

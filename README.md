@@ -16,6 +16,9 @@ and see real output. Not a mock: code is executed by
   merge without conflicts, no central arbiter.
 - **Live presence** — per-user colors, names, and live remote cursors/selections
   rendered inside Monaco via the Yjs awareness protocol.
+- **Shared language** — the selected language lives in the shared Yjs doc, so
+  when one person switches to Java everyone's editor, filename tab, and Run
+  target switch with them.
 - **Real execution** — Python, JavaScript, C++, and Java (plus more) run on
   JDoodle with stdin support, plus error and timeout detection.
 - **IDE feel** — Monaco editor, VS Code dark theme, split editor/output panes,
@@ -59,7 +62,8 @@ and see real output. Not a mock: code is executed by
 - The **execution proxy** exists solely to keep the JDoodle credentials
   (clientId + clientSecret) server-side. The browser never sees them. JDoodle is
   synchronous — one request in, one result out — so the proxy is a single POST
-  endpoint (no polling). It also translates our language keys into JDoodle's
+  endpoint (no polling). Because every run spends a JDoodle credit, the endpoint
+  is rate-limited per IP and rejects oversized payloads. It also translates our language keys into JDoodle's
   language codes + version indices.
 
 > **A note on error output:** JDoodle returns a single combined `output` string —
@@ -121,6 +125,8 @@ npm run dev                 # http://localhost:5173
 ```
 
 Open two browser tabs on the same `/room/:roomId` URL to see live collaboration.
+Opening a room link before choosing a display name takes you to the landing page
+with that room ID pre-filled.
 
 ### Environment variables
 
@@ -131,6 +137,7 @@ Open two browser tabs on the same `/room/:roomId` URL to see live collaboration.
 | `JDOODLE_CLIENT_ID`      | yes\*    | JDoodle client ID from [JDoodle](https://www.jdoodle.com/compiler-api). Free tier: 200 credits/day, no card required. |
 | `JDOODLE_CLIENT_SECRET`  | yes\*    | JDoodle client secret (paired with the client ID).                    |
 | `PORT`                   | no       | Defaults to `1234`.                                                    |
+| `EXECUTE_RATE_LIMIT`     | no       | Max runs per IP per minute on `/api/execute`. Defaults to `10`.        |
 
 \* The app loads and collaboration works without them, but **Run** will fail with
 a "Server missing JDoodle credentials" message until both are set. These are the
@@ -152,7 +159,7 @@ only things you must provide to exercise execution.
 
 ```bash
 cd client
-npm test        # vitest run — 42 tests, incl. property-based (fast-check) + JDoodle flow
+npm test        # vitest run — 45 tests, incl. property-based (fast-check) + JDoodle flow
 ```
 
 The JDoodle execution flow is covered by `src/tests/jdoodle.test.js` with a mocked

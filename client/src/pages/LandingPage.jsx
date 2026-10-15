@@ -11,14 +11,16 @@
  */
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { generateRoomId } from '../utils/roomId.js'
 import { pickUserColor } from '../utils/colors.js'
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [username, setUsername] = useState('')
-  const [joinRoomId, setJoinRoomId] = useState('')
+  // Pre-filled when someone opens a shared room link without a display name yet
+  const [joinRoomId, setJoinRoomId] = useState(location.state?.roomId ?? '')
   const [usernameError, setUsernameError] = useState('')
   const [joinError, setJoinError] = useState('')
 
@@ -84,7 +86,9 @@ export default function LandingPage() {
               if (usernameError) setUsernameError('')
             }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreateRoom()
+              if (e.key !== 'Enter') return
+              if (joinRoomId.trim()) enterRoom(joinRoomId.trim())
+              else handleCreateRoom()
             }}
             maxLength={32}
             autoFocus

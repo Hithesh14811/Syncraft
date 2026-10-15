@@ -4,7 +4,7 @@
  * The Yjs awareness protocol broadcasts ephemeral state (not stored in the CRDT)
  * between all connected clients. Each client publishes:
  *   - user: { name, color }   — set on join
- *   - cursor: { anchor, head } — updated on every cursor/selection change
+ *   - selection: { anchor, head } — set by the y-monaco binding as the cursor moves
  *
  * This hook subscribes to awareness 'update' events and returns the current
  * map of all connected clients' states (including the local client).
@@ -15,7 +15,7 @@ import { useState, useEffect } from 'react'
 
 /**
  * @param {import('y-websocket').WebsocketProvider | null} provider
- * @returns {Map<number, { user: { name: string, color: string } | null, cursor: object | null }>}
+ * @returns {Map<number, { user: { name: string, color: string } | null, selection: object | null }>}
  */
 export function usePresence(provider) {
   const [states, setStates] = useState(new Map())

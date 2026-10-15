@@ -1,7 +1,7 @@
 /**
  * jdoodle.js — JDoodle Compiler API client utilities
  *
- * Replaces the old judge0.js. Calls go through the server proxy at /api/execute
+ * Calls go through the server proxy at /api/execute
  * to keep the JDoodle clientId/clientSecret server-side only.
  *
  * Flow (synchronous — no polling):
@@ -169,14 +169,6 @@ const TIMEOUT_SIGNATURES = [
   /\btime\s*limit\b/i,
   /\btimed?\s*out\b/i,
 ]
-
-/**
- * Return the fallback runtime list (dropdown has no live fetch — languages are
- * fixed by the proxy's LANGUAGE_MAP).
- */
-export async function fetchRuntimes() {
-  return FALLBACK_RUNTIMES
-}
 
 /**
  * Ensure the four required languages are present.

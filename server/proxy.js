@@ -46,6 +46,33 @@ export const LANGUAGE_MAP = {
   shell:      { language: 'bash',    versionIndex: '4' },
 }
 
+// Per-IP rate limit for /api/execute. Every run spends a JDoodle credit
+// (200/day on the free tier), so a public deployment needs some protection.
+const RATE_LIMIT_WINDOW_MS = 60_000
+const RATE_LIMIT_MAX = Number(process.env.EXECUTE_RATE_LIMIT) || 10
+const MAX_SCRIPT_LENGTH = 50_000
+const hits = new Map()
+
+export function rateLimit(req, res, next) {
+  const now = Date.now()
+  const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS)
+  if (recent.length >= RATE_LIMIT_MAX) {
+    return res.status(429).json({ message: 'Too many runs. Please wait a minute and try again.' })
+  }
+  recent.push(now)
+  hits.set(ip, recent)
+  next()
+}
+
+// Drop idle entries so the map doesn't grow forever.
+setInterval(() => {
+  const now = Date.now()
+  for (const [ip, times] of hits) {
+    if (times.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) hits.delete(ip)
+  }
+}, RATE_LIMIT_WINDOW_MS).unref()
+
 /**
  * POST /api/execute — run code on JDoodle and return the result.
  * Request body: { language, version, files: [{content}], stdin }
@@ -64,6 +91,9 @@ export async function proxyExecute(req, res) {
   }
 
   const script = files?.[0]?.content ?? ''
+  if (typeof script !== 'string' || script.length > MAX_SCRIPT_LENGTH) {
+    return res.status(413).json({ message: 'Code is too large to run.' })
+  }
 
   try {
     const jdoodleRes = await fetch(JDOODLE_URL, {

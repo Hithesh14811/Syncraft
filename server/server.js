@@ -2,7 +2,7 @@
  * server.js — Syncraft backend entry point
  *
  * Architecture:
- *   - Express handles HTTP routes (health check, optional Piston proxy)
+ *   - Express handles HTTP routes (health check, JDoodle execution proxy)
  *   - The HTTP server is handed to the WebSocket relay (y-websocket)
  *   - The relay broadcasts Yjs CRDT updates between all clients in the same room
  *
@@ -14,12 +14,12 @@ import express from 'express'
 import http from 'http'
 import 'dotenv/config'
 import { attachRelay } from './relay.js'
-import { proxyExecute } from './proxy.js'
+import { proxyExecute, rateLimit } from './proxy.js'
 
 const app = express()
 
 // Parse JSON bodies for the proxy route
-app.use(express.json())
+app.use(express.json({ limit: '100kb' }))
 
 // CORS headers so the browser client can reach this server from a different origin
 app.use((req, res, next) => {
@@ -41,7 +41,7 @@ app.get('/health', (req, res) => {
 // JDoodle proxy — forwards code execution requests to the JDoodle Compiler API.
 // JDoodle is synchronous, so a single POST route handles the full round-trip;
 // the client's clientId/clientSecret stay server-side (see proxy.js).
-app.post('/api/execute', proxyExecute)
+app.post('/api/execute', rateLimit, proxyExecute)
 
 // Create the HTTP server and attach the Yjs WebSocket relay
 const httpServer = http.createServer(app)
