@@ -1,224 +1,91 @@
 # Syncraft
 
-A real-time collaborative code editor with live execution. Multiple people edit
-the same file simultaneously — with live cursors and presence — then run the code
-and see real output. Not a mock: code is executed by
-[JDoodle](https://www.jdoodle.com/) and the output is real.
+Syncraft is a collaborative code editor that runs in the browser. You create a room, send the link to a friend, and you both type in the same file at the same time. You can see each other's cursors, and when you hit Run the code actually executes and you both get the real output back.
 
-> Single shared file per room. Multi-file, auth, and persistence are explicit
-> non-goals (see [Scope](#scope)).
+I built it because most "collaborative editor" demos stop at syncing text. I wanted the whole loop: edit together, run together, see the same result.
 
----
+## What it does
 
-## Features
+- **Live editing.** Edits merge in real time, even when two people type on the same line at once. Nothing gets overwritten.
+- **Presence.** Everyone gets a color and a name. You can see who's in the room and where their cursor is, with a little name tag on it.
+- **Real execution.** Python, JavaScript, C++ and Java run through the JDoodle compiler API. Stdin is supported, and compile errors and infinite loops are shown as errors and timeouts instead of just dumping text.
+- **Shared language.** If one person switches the room to Java, everyone switches with them, so you're never running someone else's code with the wrong compiler.
+- **Feels like an IDE.** Monaco (the editor inside VS Code), dark theme, a filename tab, an output panel, and Ctrl/Cmd+Enter to run.
 
-- **Real-time collaboration** — Yjs CRDT sync over WebSockets; concurrent edits
-  merge without conflicts, no central arbiter.
-- **Live presence** — per-user colors, names, and live remote cursors/selections
-  rendered inside Monaco via the Yjs awareness protocol.
-- **Shared language** — the selected language lives in the shared Yjs doc, so
-  when one person switches to Java everyone's editor, filename tab, and Run
-  target switch with them.
-- **Real execution** — Python, JavaScript, C++, and Java (plus more) run on
-  JDoodle with stdin support, plus error and timeout detection.
-- **IDE feel** — Monaco editor, VS Code dark theme, split editor/output panes,
-  a filename tab, language dropdown, and a `Ctrl/Cmd+Enter` run shortcut.
-
----
-
-## Architecture
+## How it works
 
 ```
-┌──────────────────────────── Browser (React + Vite) ────────────────────────────┐
-│                                                                                  │
-│   LandingPage ──▶ /room/:roomId ──▶ EditorPage                                   │
-│                                       │                                          │
-│     ┌─────────────────────────────────┼───────────────────────────────────┐    │
-│     │ Monaco editor        useCollabEditor ── Y.Doc  ◀── y-monaco binding   │    │
-│     │ (y-monaco)                        │                                   │    │
-│     │ live cursors ◀── usePresence ── awareness                            │    │
-│     │ Run ▶ ─── useCodeExecution ── utils/jdoodle.js (single request)       │    │
-│     └───────────────┬───────────────────────────────┬───────────────────────┘  │
-│                     │ WebSocket (Yjs sync +          │ HTTP  POST /api/execute   │
-│                     │ awareness)                     │                           │
-└─────────────────────┼───────────────────────────────┼──────────────────────────┘
-                      │                               │
-        ┌─────────────▼───────────────┐   ┌───────────▼──────────────────────────┐
-        │  Yjs relay (relay.js)        │   │  Express proxy (proxy.js)             │
-        │  y-websocket setupWSConnection│   │  injects clientId/secret (server-only)│
-        │  room = docName, pure relay   │   │  maps lang → JDoodle code + version   │
-        └──────────────────────────────┘   └───────────────┬───────────────────────┘
-                      ▲                                     │
-        both share one Node HTTP server (server.js)         ▼
-                                                    ┌──────────────────────┐
-                                                    │  JDoodle Compiler API │
-                                                    │  sandboxed execution   │
-                                                    └──────────────────────┘
+ Browser (React + Vite)                         Node server
+ ┌───────────────────────────┐   WebSocket    ┌───────────────────────────┐
+ │ Monaco  <->  Yjs document │ <------------> │ y-websocket relay         │
+ │ cursors via Yjs awareness │                │ (one doc per room)        │
+ │                           │   POST /api/   │                           │
+ │ Run button  ──────────────│ ----execute--> │ Express proxy ──> JDoodle │
+ └───────────────────────────┘                └───────────────────────────┘
 ```
 
-- The **WebSocket relay** is a dumb pipe: it never inspects or stores document
-  content. All CRDT conflict resolution happens client-side in Yjs. Room
-  isolation is achieved by using the room ID as the Yjs `docName`.
-- The **execution proxy** exists solely to keep the JDoodle credentials
-  (clientId + clientSecret) server-side. The browser never sees them. JDoodle is
-  synchronous — one request in, one result out — so the proxy is a single POST
-  endpoint (no polling). Because every run spends a JDoodle credit, the endpoint
-  is rate-limited per IP and rejects oversized payloads. It also translates our language keys into JDoodle's
-  language codes + version indices.
+**Syncing.** The document is a Yjs CRDT. Every client keeps its own copy, and Yjs guarantees that everyone who has seen the same edits ends up with the same text, no matter what order the edits arrived in. Because of that, the server doesn't have to be smart. It just relays updates between everyone in a room. The room ID in the URL is the document name, which is all the isolation between rooms needs.
 
-> **A note on error output:** JDoodle returns a single combined `output` string —
-> there is no separate stderr channel. Compile errors, runtime stack traces, and
-> the "taking too long to execute" timeout message all arrive inside `output`. So
-> [`utils/jdoodle.js`](client/src/utils/jdoodle.js) classifies the text
-> heuristically (`isErrorOutput` / `isTimeoutOutput`) and the OutputPanel renders
-> it as normal output, a red error, or a timeout notice accordingly.
+I went with a CRDT instead of operational transform (what Google Docs historically used) mostly because of that last point. With OT the server has to own the document and transform every operation against every concurrent one, and getting those transforms right for every case is hard. With Yjs the merging happens on the clients using a well-tested library, and the server stays a thin relay. The cost is some extra memory per character, which doesn't matter for a code file.
 
-### Why Yjs (CRDT) instead of Operational Transform (OT)?
+**Running code.** The browser never talks to JDoodle directly, because that would mean shipping my API keys to every visitor. Instead it posts to `/api/execute` on my server, which adds the credentials and forwards the request. Each run costs a JDoodle credit (200 a day on the free tier), so the endpoint is rate-limited per IP and rejects huge payloads.
 
-CRDTs guarantee that any two clients which receive the same set of edits converge
-to the same document, regardless of the order those edits arrive — so correctness
-does not depend on a central server sequencing operations. That let me build the
-server as a **stateless relay** rather than an OT authority that has to hold
-canonical state, transform every incoming operation against concurrent ones, and
-become both a scaling bottleneck and a single point of failure. OT's transform
-functions are also notoriously subtle to get right across every edit-type pairing,
-whereas Yjs's CRDT (a YATA variant) handles concurrent insertions deterministically
-with well-tested library code and offline-friendly merging. The trade-off is memory
-overhead per character for CRDT metadata, which is a non-issue at the scale of a
-collaborative code buffer. For a real-time editor where I wanted a thin backend and
-strong convergence guarantees, Yjs was the clear choice.
+JDoodle sends back stdout and errors in one combined string, so the client uses a few patterns (Python tracebacks, `error:` lines, segfaults, JDoodle's timeout message and so on) to decide whether to show the result as normal output, an error or a timeout.
 
----
+## Running it locally
 
-## Tech stack
+You need Node 18 or newer.
 
-| Layer        | Choice                                                    |
-| ------------ | --------------------------------------------------------- |
-| Frontend     | React 18, Vite, React Router                              |
-| Editor       | Monaco (`@monaco-editor/react`)                           |
-| Collaboration| Yjs, `y-monaco`, `y-websocket`                            |
-| Backend      | Node, Express, `ws`, `y-websocket` relay                  |
-| Execution    | JDoodle Compiler API (server-side proxy)                  |
-| Tests        | Vitest + Testing Library + fast-check (property-based)    |
-
----
-
-## Local development
-
-Requires Node 18+.
-
-### 1. Server
+**Server**
 
 ```bash
 cd server
 npm install
-cp .env.example .env        # then edit .env (see below)
-npm run dev                 # http://localhost:1234  (WS relay + /api/execute)
+cp .env.example .env   # add your JDoodle client ID and secret
+npm run dev            # http://localhost:1234
 ```
 
-### 2. Client
+**Client**
 
 ```bash
 cd client
 npm install
-npm run dev                 # http://localhost:5173
+npm run dev            # http://localhost:5173
 ```
 
-Open two browser tabs on the same `/room/:roomId` URL to see live collaboration.
-Opening a room link before choosing a display name takes you to the landing page
-with that room ID pre-filled.
+Open the same room URL in two tabs and start typing. If you open a room link before picking a display name, you land on the home page with the room ID already filled in.
 
 ### Environment variables
 
-**Server** (`server/.env`):
+Server (`server/.env`):
 
-| Variable                 | Required | Description                                                            |
-| ------------------------ | -------- | ---------------------------------------------------------------------- |
-| `JDOODLE_CLIENT_ID`      | yes\*    | JDoodle client ID from [JDoodle](https://www.jdoodle.com/compiler-api). Free tier: 200 credits/day, no card required. |
-| `JDOODLE_CLIENT_SECRET`  | yes\*    | JDoodle client secret (paired with the client ID).                    |
-| `PORT`                   | no       | Defaults to `1234`.                                                    |
-| `EXECUTE_RATE_LIMIT`     | no       | Max runs per IP per minute on `/api/execute`. Defaults to `10`.        |
+| Variable | Needed? | What it's for |
+| --- | --- | --- |
+| `JDOODLE_CLIENT_ID` | for Run | Get one free at [jdoodle.com/compiler-api](https://www.jdoodle.com/compiler-api) |
+| `JDOODLE_CLIENT_SECRET` | for Run | Goes with the client ID |
+| `PORT` | no | Defaults to `1234` |
+| `EXECUTE_RATE_LIMIT` | no | Runs per IP per minute, defaults to `10` |
 
-\* The app loads and collaboration works without them, but **Run** will fail with
-a "Server missing JDoodle credentials" message until both are set. These are the
-only things you must provide to exercise execution.
+Editing and presence work without the JDoodle keys. Only the Run button needs them.
 
-**Client** (`client/.env`, all optional):
+Client (`client/.env`, optional): `VITE_WS_URL` is the WebSocket address of the server. It defaults to `ws://localhost:1234`.
 
-| Variable          | Description                                                          |
-| ----------------- | ------------------------------------------------------------------- |
-| `VITE_WS_URL`     | WebSocket URL of the server relay. Defaults to `ws://localhost:1234`. Set to `wss://<your-server>` in production. |
-
-> The client calls the execution proxy at the relative path `/api/execute`, so in
-> production the client's requests to `/api/*` must reach the server (via a
-> rewrite/proxy — see deploy below).
-
----
-
-## Testing
+## Tests
 
 ```bash
 cd client
-npm test        # vitest run — 45 tests, incl. property-based (fast-check) + JDoodle flow
+npm test
 ```
 
-The JDoodle execution flow is covered by `src/tests/jdoodle.test.js` with a mocked
-`fetch` against real JDoodle response shapes for three scenarios: **stdin input**,
-a **compile/syntax error**, and an **infinite-loop timeout** — plus the
-`isErrorOutput` / `isTimeoutOutput` classifiers. No credentials are needed to run
-the tests.
+There are 45 tests (Vitest + Testing Library). A few are property-based tests with fast-check, for example checking that merging two independent edits keeps both, that a fresh document synced from another ends up identical, and that blank usernames are always rejected. The JDoodle flow is tested against real response shapes for stdin, a compile error and an infinite loop, so no API keys are needed.
 
----
+## Deploying
 
-## Deployment
+The client and server deploy separately, since the server has to hold long-lived WebSocket connections.
 
-The client (static) and server (long-lived WebSocket + proxy) deploy separately.
-
-### Server → Render
-
-1. New **Web Service** from this repo, root directory `server`.
-2. Build command: `npm install` · Start command: `npm start`.
-3. Add env vars `JDOODLE_CLIENT_ID` and `JDOODLE_CLIENT_SECRET`. (`PORT` is provided by Render automatically.)
-4. Note the service URL, e.g. `https://syncraft-fh20.onrender.com`.
-
-Render supports WebSockets on the same port, so the Yjs relay and `/api/execute`
-proxy are both served from this one service.
-
-### Client → Vercel
-
-1. New project from this repo, root directory `client`.
-2. Framework preset: **Vite** (build `npm run build`, output `dist`).
-3. Add env var `VITE_WS_URL = wss://syncraft-fh20.onrender.com`.
-4. Route `/api/*` to the server by adding a `vercel.json` in `client/`:
-
-   ```json
-   {
-     "rewrites": [
-       { "source": "/api/:path*", "destination": "https://syncraft-fh20.onrender.com/api/:path*" }
-     ]
-   }
-   ```
-
-   This keeps the JDoodle credentials server-side: the browser only ever calls
-   `/api/execute` on its own origin, which Vercel forwards to Render.
-
----
+- **Server on Render.** New web service, root directory `server`, start command `npm start`, and add the two JDoodle variables. Render supports WebSockets on the same port, so the relay and the API live in one service.
+- **Client on Vercel.** Root directory `client`, Vite preset, and set `VITE_WS_URL` to `wss://<your-render-service>`. `client/vercel.json` forwards `/api/*` to the Render service, so the browser only ever calls its own origin.
 
 ## Scope
 
-**In scope:** real-time multi-user editing of a single shared file per room,
-presence/cursors, and real code execution.
-
-**Non-goals (intentionally not built):** authentication, multi-file / folder
-support, persistent storage (rooms are in-memory and ephemeral), and chat/video.
-
----
-
-## Notes
-
-- Execution uses the **JDoodle Compiler API**. It was chosen for a zero-cost free
-  tier (200 credits/day, no card required) and a simple synchronous request/response
-  — no submit-then-poll. Auth is a clientId + clientSecret pair, kept server-side in
-  the Express proxy; the browser never sees them.
-- The `TabBar` is a deliberately cosmetic single-file tab (it shows the filename
-  for the selected language, e.g. `main.py`), consistent with the single-file scope.
+Each room is a single shared file. I left out accounts, multiple files and saving rooms on purpose to keep the focus on real-time sync and execution. Rooms live in memory and disappear when everyone leaves.
