@@ -2,6 +2,10 @@
 
 Syncraft is a collaborative code editor that runs in the browser. You create a room, send the link to a friend, and you both type in the same file at the same time. You can see each other's cursors, and when you hit Run the code actually executes and you both get the real output back.
 
+**Try it: [syncraft-app.onrender.com](https://syncraft-app.onrender.com)**. Create a room, then open the same link in a second tab or send it to someone.
+
+It runs on Render's free tier, so if nobody has used it for a while the server is asleep and the first load can take up to a minute. If the editor doesn't sync right away, give it a moment.
+
 I built it because most "collaborative editor" demos stop at syncing text. I wanted the whole loop: edit together, run together, see the same result.
 
 ## What it does
@@ -68,7 +72,10 @@ Server (`server/.env`):
 
 Editing and presence work without the JDoodle keys. Only the Run button needs them.
 
-Client (`client/.env`, optional): `VITE_WS_URL` is the WebSocket address of the server. It defaults to `ws://localhost:1234`.
+Client (`client/.env`, optional):
+
+- `VITE_WS_URL` is the WebSocket address of the server. It defaults to `ws://localhost:1234`.
+- `VITE_API_URL` is the server's base URL for running code. Leave it empty when `/api` is proxied (the Vite dev server and Vercel both do that), and set it when the client is hosted as plain static files.
 
 ## Tests
 
@@ -84,7 +91,8 @@ There are 45 tests (Vitest + Testing Library). A few are property-based tests wi
 The client and server deploy separately, since the server has to hold long-lived WebSocket connections.
 
 - **Server on Render.** New web service, root directory `server`, start command `npm start`, and add the two JDoodle variables. Render supports WebSockets on the same port, so the relay and the API live in one service.
-- **Client on Vercel.** Root directory `client`, Vite preset, and set `VITE_WS_URL` to `wss://<your-render-service>`. `client/vercel.json` forwards `/api/*` to the Render service, so the browser only ever calls its own origin.
+- **Client as a Render static site** (how the live demo runs). Build command `cd client && npm ci && npm run build && cp dist/index.html dist/404.html`, publish directory `client/dist`. Set `VITE_WS_URL` to `wss://<your-render-service>` and `VITE_API_URL` to `https://<your-render-service>`. Copying `index.html` to `404.html` makes room links work when you open them directly.
+- **Or the client on Vercel.** Root directory `client`, Vite preset, and set `VITE_WS_URL`. `client/vercel.json` forwards `/api/*` to the Render service, so `VITE_API_URL` isn't needed there.
 
 ## Scope
 
